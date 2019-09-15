@@ -15,7 +15,7 @@ class Manager:
         self.dpi = options.get("dpi", 200)
         self.pages = options.get("pages", 1)
 
-        self._plugins = options.get("plugins")
+        self._plugins = options.get("plugins", [])
 
         self._commands = {"generate": self._generate}
 
