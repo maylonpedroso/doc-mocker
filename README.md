@@ -32,10 +32,10 @@ optional arguments:
 
 Every contribution is welcome.
 
-Be sure to your code is [PEP-8](https://www.python.org/dev/peps/pep-0008/) compliant.
+Be sure your code is [PEP-8](https://www.python.org/dev/peps/pep-0008/) compliant.
 Use [black](https://black.readthedocs.io/en/stable/) to fix your formatting before committing changes.
 ```bash
-black main doc_mocker
+black main.py doc_mocker --line-length=100
 ```
 Optional: Install flake8 pre-commit hook to check your code before committing.
 ```bash
