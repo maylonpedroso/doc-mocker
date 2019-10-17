@@ -24,6 +24,7 @@ class Page:
     resolution = FunctionBindDescriptor("dpi", _to_inches, _to_millimeters)
 
     def __init__(self, height: int, width: int, dpi: int, columns=1) -> None:
+        self.uuid = uuid4()
         self.height = height
         self.width = width
         self.dpi = dpi
@@ -38,9 +39,13 @@ class Page:
 
         # TODO: Inject this dependency as an abstraction
         self.writer = PILWriter(
-            int(self.height_inches * self.dpi),
-            int(self.width_inches * self.dpi),
-            self.resolution,
+            int(self.height_inches * self.dpi), int(self.width_inches * self.dpi), self.resolution
+        )
+
+    def __repr__(self):
+        return (
+            f"<{self.__class__.__name__} id={self.uuid} width={self.width}"
+            f" height={self.height} dpi={self.dpi}>"
         )
 
     @property
@@ -78,8 +83,7 @@ class Page:
         self.writer.write_image(position or self.pointer, image)
 
     def save(self, path: Path):
-        name = str(uuid4())
-        (path / Path(f"{name}.json")).write_text(
+        (path / Path(f"{self.uuid}.json")).write_text(
             json.dumps(
                 {
                     "height": self.height,
@@ -89,4 +93,4 @@ class Page:
                 }
             )
         )
-        self.writer.save(path, name)
+        self.writer.save(path, str(self.uuid))

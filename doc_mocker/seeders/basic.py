@@ -1,4 +1,5 @@
 import inspect
+import logging
 import random
 
 from doc_mocker import fonts as fonts_module
@@ -10,14 +11,22 @@ FONTS = [
     if inspect.isclass(obj) and fonts_module.Font in obj.__bases__
 ]
 
+logger = logging.getLogger(__name__)
+
 
 class Seeder:
+    @property
+    def font(self) -> fonts_module.Font:
+        font_size = random.randint(9, 17)
+        font_class = random.choice(FONTS)
+        return font_class(font_size)
+
     def seed(self, page: Page):
         raise NotImplementedError()
 
 
 class BasicSeeder(Seeder):
-    TEXTS = [
+    texts = [
         Text("Lorem Ipsum", TextType.TITLE),
         Text(
             """Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur,
@@ -78,11 +87,9 @@ class BasicSeeder(Seeder):
         ),
     ]
 
-    BOOL_CHOICES = [True] + [False] * 9
-
     def seed(self, page: Page):
-        font_class = random.choice(FONTS)
-        font = random.choice([font_class(size) for size in range(9, 17)])
+        logger.info(f"Start seeding {page}")
         while not page.is_full:
-            text = random.choice(self.TEXTS)
-            page.write(text, font)
+            text = random.choice(self.texts)
+            page.write(text, self.font)
+        logger.info(f"Done seeding {page}")

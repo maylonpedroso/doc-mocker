@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys
 
+from enum import Enum
 from typing import List
 
 from doc_mocker.manager import Manager
@@ -9,8 +10,15 @@ from doc_mocker.models import PageType
 from doc_mocker.seeders import PageSeeder
 from doc_mocker.plugin_loader import PluginLoader
 
-
 logger = logging.getLogger(__name__)
+
+
+class LoggingLevel(Enum):
+    debug = logging.DEBUG
+    info = logging.INFO
+    warn = logging.WARNING
+    error = logging.ERROR
+    critical = logging.CRITICAL
 
 
 def run() -> None:
@@ -40,8 +48,15 @@ def run() -> None:
     parser.add_argument(
         "-o", "--output-path", help="output path (default: current path)", default="."
     )
+    parser.add_argument(
+        "-l",
+        "--logging",
+        help="Logging level (default e: error)",
+        default=LoggingLevel.error.name,
+        choices=[level.name for level in LoggingLevel],
+    )
 
-    if '-h' not in sys.argv and '--help' not in sys.argv:
+    if "-h" not in sys.argv and "--help" not in sys.argv:
         main_args, argv = parser.parse_known_args()
 
     # setting up plugin arguments
@@ -52,6 +67,8 @@ def run() -> None:
             plugins_index[arg_name[0]] = plugin
 
     parser.parse_args()
+
+    logging.basicConfig(level=LoggingLevel[main_args.logging].value)
 
     plugins = []
     for argv in split_plugins_arguments(argv):
@@ -77,7 +94,7 @@ def run() -> None:
 def split_plugins_arguments(arguments: List[str]) -> List[List[str]]:
     split_args = []
     for argument in arguments:
-        if argument.startswith('-'):
+        if argument.startswith("-"):
             split_args.append([argument])
         else:
             split_args[-1].append(argument)

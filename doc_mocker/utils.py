@@ -16,6 +16,4 @@ class FunctionBindDescriptor:
         if callable(self._reverse):
             setattr(instance, self._name, self._reverse(value))
         else:
-            raise AttributeError(
-                "Must provide a reverse method to be able to assign a value"
-            )
+            raise AttributeError("Must provide a reverse method to be able to assign a value")
