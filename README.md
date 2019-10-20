@@ -9,8 +9,9 @@ It can be extended with plugins to add extra processing or content to the result
 Running `doc-mocker -h` will display the following help
 
 ```
-usage:  [-h] [-n NUMBER_OF_PAGES] [-t {A4}] [-s {BASIC}] [-o OUTPUT_PATH]
-        {generate}
+usage: doc-mocker [-h] [-n NUMBER_OF_PAGES] [-t {A4}] [-s PAGE_SEEDER]
+                  [-o OUTPUT_PATH] [-l {debug,info,warn,error,critical}]
+                  {generate}
 
 positional arguments:
   {generate}            command to run
@@ -21,11 +22,12 @@ optional arguments:
                         number of pages to generate (default: 1)
   -t {A4}, --page-type {A4}
                         page type (default: A4)
-  -s {BASIC}, --page-seeder {BASIC}
-                        page seeder (default: BASIC)
+  -s PAGE_SEEDER, --page-seeder PAGE_SEEDER
+                        choices: {basic, wikipedia[:keyword]}
   -o OUTPUT_PATH, --output-path OUTPUT_PATH
                         output path (default: current path)
-
+  -l {debug,info,warn,error,critical}, --logging {debug,info,warn,error,critical}
+                        Logging level (default e: error)
 ```
 
 ## Contributing

@@ -2,3 +2,4 @@ Pillow
 pytest
 flake8
 black
+wikipedia

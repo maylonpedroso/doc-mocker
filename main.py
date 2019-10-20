@@ -38,12 +38,12 @@ def run() -> None:
         default=PageType.A4.name,
         choices=[type_.name for type_ in PageType],
     )
+    seeder_choices_text = ", ".join(seeder.value.arg_name for seeder in PageSeeder)
     parser.add_argument(
         "-s",
         "--page-seeder",
-        help=f"page seeder (default: {PageSeeder.BASIC.name})",
-        default=PageSeeder.BASIC.name,
-        choices=[seeder.name for seeder in PageSeeder],
+        help=f"choices: {{{seeder_choices_text}}}",
+        default=PageSeeder.basic.name,
     )
     parser.add_argument(
         "-o", "--output-path", help="output path (default: current path)", default="."
@@ -58,6 +58,7 @@ def run() -> None:
 
     if "-h" not in sys.argv and "--help" not in sys.argv:
         main_args, argv = parser.parse_known_args()
+        validate_seeder(parser, main_args, seeder_choices_text)
 
     # setting up plugin arguments
     plugins_index = {}
@@ -99,6 +100,16 @@ def split_plugins_arguments(arguments: List[str]) -> List[List[str]]:
         else:
             split_args[-1].append(argument)
     return split_args
+
+
+def validate_seeder(parser, main_args, choices_text):
+    if main_args.page_seeder.split(":")[0] not in {seeder.name for seeder in PageSeeder}:
+        parser.print_usage()
+        sys.stderr.write(
+            f"error: argument -s/--seeder: invalid choice: {main_args.page_seeder}"
+            f" (choose from {choices_text})\n"
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":

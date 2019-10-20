@@ -1,16 +1,22 @@
-import multiprocessing as mp
+import asyncio
+import logging
+import time
 
 from pathlib import Path
 from typing import Any
 
+from doc_mocker.models.pages import EmptyPageException
 from .models import Page, PageType
 from .seeders import Seeder, PageSeeder
+
+logger = logging.getLogger(__name__)
 
 
 class Manager:
     def __init__(self, **options: Any):
         self.output_path: Path = Path(options.get("output_path", "."))
-        self.seeder: Seeder = PageSeeder[options.get("seeder")].value
+        seeder, *seeder_args = options.get("seeder").split(":")
+        self.seeder: Seeder = PageSeeder[seeder].value(*seeder_args)
         self.height, self.width = PageType[options.get("type_")].value
         self.dpi = options.get("dpi", 200)
         self.pages = options.get("pages", 1)
@@ -19,19 +25,22 @@ class Manager:
 
         self._commands = {"generate": self._generate}
 
-    def _generate_page(self) -> None:
+    async def _generate_page(self) -> None:
         page = Page(self.height, self.width, self.dpi)
-        self.seeder.seed(page)
+        await self.seeder.seed(page)
         for plugin in self._plugins:
             plugin.process_page(page)
-        page.save(self.output_path)
+        try:
+            await page.save(self.output_path)
+        except EmptyPageException as e:
+            logger.warning(e)
 
     def _generate(self):
-        poll = mp.Pool(mp.cpu_count() * 2)
-        for _ in range(self.pages):
-            poll.apply_async(self._generate_page)
-        poll.close()
-        poll.join()
+        start_time = time.time()
+        asyncio.get_event_loop().run_until_complete(
+            asyncio.gather(*[self._generate_page() for _ in range(self.pages)])
+        )
+        logger.info(f"Total running time: {time.time() - start_time}")
 
     def run(self, command: str) -> None:
         try:

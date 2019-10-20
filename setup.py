@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="doc-mocker",
-    version="0.0.1",
+    version="0.0.2",
     author="Maylon Pedroso",
     author_email="maylonpedroso@gmail.com",
     description="Mock Document Image Generator",
@@ -13,7 +13,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/maylonpedroso/doc-mocker",
     packages=setuptools.find_packages(),
-    install_requires=["Pillow"],
+    python_requires=">=3.5",
+    install_requires=["Pillow", "wikipedia"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
