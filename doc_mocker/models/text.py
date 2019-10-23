@@ -9,5 +9,8 @@ class TextType(Enum):
 
 class Text:
     def __init__(self, value: str, type_: TextType = TextType.NORMAL):
-        self.value = value.replace("\n", " ").replace("  ", " ")
-        self.type = type_
+        self.value: str = value.replace("\n", " ").replace("  ", " ")
+        self.type: TextType = type_
+
+    def __repr__(self):
+        return f'<Text type={self.type} length="{len(self.value)}">'

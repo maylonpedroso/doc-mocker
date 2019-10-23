@@ -21,11 +21,13 @@ class Seeder:
         font_class = random.choice(FONTS)
         return font_class(font_size)
 
-    def seed(self, page: Page):
+    async def seed(self, page: Page) -> None:
         raise NotImplementedError()
 
 
 class BasicSeeder(Seeder):
+    arg_name = "basic"
+
     texts = [
         Text("Lorem Ipsum", TextType.TITLE),
         Text(
@@ -87,9 +89,9 @@ class BasicSeeder(Seeder):
         ),
     ]
 
-    def seed(self, page: Page):
+    async def seed(self, page: Page):
         logger.info(f"Start seeding {page}")
         while not page.is_full:
             text = random.choice(self.texts)
-            page.write(text, self.font)
+            await page.write(text, self.font)
         logger.info(f"Done seeding {page}")

@@ -1,4 +1,7 @@
+import asyncio
 import json
+import logging
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional, Tuple
 from uuid import uuid4
@@ -15,6 +18,16 @@ def _to_inches(millimeters: float) -> float:
 
 def _to_millimeters(inches: float) -> float:
     return inches * 25.4
+
+
+logger = logging.getLogger(__name__)
+
+loop = asyncio.get_event_loop()
+thread_executor = ThreadPoolExecutor()
+
+
+class EmptyPageException(Exception):
+    pass
 
 
 class Page:
@@ -52,16 +65,20 @@ class Page:
     def is_full(self) -> bool:
         return self.pointer[0] >= self.width - self.margin_left
 
-    def write(self, text: Text, font: Font) -> None:
+    @property
+    def is_empty(self) -> bool:
+        return not bool(self.content)
+
+    async def write(self, text: Text, font: Font) -> None:
+        logger.info(f"Writing {text}")
         # Calculate available window to write text
         window = (
             self.width - self.margin_left - self.pointer[0],
             self.height - self.margin_top - self.pointer[1],
         )
-
         # Write text and get dimensions
-        width, height = self.writer.write_text(self.pointer, window, text, font)
-
+        width, height = await self.writer.write_text(self.pointer, window, text, font)
+        # Create meta content
         self.content.append(
             {
                 "text": {
@@ -73,16 +90,21 @@ class Page:
                 }
             }
         )
-
         # Recalculate pointer position
         self.pointer = (self.pointer[0], self.pointer[1] + height)
         if self.pointer[1] > self.height - self.margin_top:
             self.pointer = (self.pointer[0] + self.column_with, self.margin_top)
+        logger.info(f"Done writing {text}")
 
     def paint(self, image: object, position: Optional[Tuple[int, int]]) -> None:
         self.writer.write_image(position or self.pointer, image)
 
-    def save(self, path: Path):
+    async def save(self, path: Path):
+        if self.is_empty:
+            raise EmptyPageException("Aborted empty page saving")
+        await loop.run_in_executor(thread_executor, self._save, path)
+
+    def _save(self, path):
         (path / Path(f"{self.uuid}.json")).write_text(
             json.dumps(
                 {

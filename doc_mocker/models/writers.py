@@ -1,10 +1,11 @@
+import asyncio
+
+from concurrent.futures import ProcessPoolExecutor
+from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 from typing import Tuple
 
-from PIL import Image, ImageDraw, ImageFont
-from PIL.ImageFont import FreeTypeFont
-
-from doc_mocker.fonts import Font
+from ..fonts import Font
 from .text import Text
 
 
@@ -14,6 +15,10 @@ def points_to_millimeters(points: float) -> int:
 
 def millimeters_to_points(millimeters: float) -> int:
     return int(millimeters * 2.83465)
+
+
+loop = asyncio.get_event_loop()
+process_executor = ProcessPoolExecutor()
 
 
 class PageImageWriter:
@@ -36,7 +41,7 @@ class PageImageWriter:
     def apply_filter(self, filter_: object) -> None:
         raise NotImplementedError()
 
-    def save(self, path: Path) -> None:
+    def save(self, path: Path, name: str) -> None:
         raise NotImplementedError()
 
 
@@ -52,7 +57,8 @@ class PILWriter(PageImageWriter):
         return round(value / self.resolution)
 
     @staticmethod
-    def _split_text(text: str, font: FreeTypeFont, window: Tuple[int, int]) -> str:
+    def _split_text(text: str, font: Font, font_size: int, window: Tuple[int, int]) -> str:
+        true_font = ImageFont.truetype(f"{font}", font_size)
         right, bottom = window
         words = text.split()
         text = ""
@@ -63,7 +69,7 @@ class PILWriter(PageImageWriter):
                 count = (starts + ends) // 2 + 1
                 phrase = " ".join(words[:count])
                 next_text = f"{text}\n{phrase}".strip()
-                width, height = font.getsize_multiline(next_text)
+                width, height = true_font.getsize_multiline(next_text)
                 if height > bottom:
                     return text
                 if width > right:
@@ -75,7 +81,7 @@ class PILWriter(PageImageWriter):
             words = words[starts + 1 :]  # noqa E203
         return text
 
-    def write_text(
+    async def write_text(
         self, position: Tuple[int, int], window: Tuple[int, int], text: Text, font: Font
     ) -> Tuple[int, int]:
         draw = ImageDraw.Draw(self.image)
@@ -83,14 +89,20 @@ class PILWriter(PageImageWriter):
         # Resize text based on its type
         font_size = millimeters_to_points(font.size * text.type.value)
 
-        # TODO: Investigate how to include `italic`, `bold` and `underlined`
-        # probably using multiple font files
-        true_font = ImageFont.truetype(f"{font}", font_size)
-
         window = tuple(map(self.scale, window))
         position = tuple(map(self.scale, position))
 
-        text_ = self._split_text(text.value, true_font, window)
+        if len(text.value) > 900:
+            # Run large texts in the ProcessPoolExecutor
+            text_ = await loop.run_in_executor(
+                process_executor, self._split_text, text.value, font, font_size, window
+            )
+        else:
+            text_ = self._split_text(text.value, font, font_size, window)
+
+        # TODO: Investigate how to include `italic`, `bold` and `underlined`
+        # probably using multiple font files
+        true_font = ImageFont.truetype(f"{font}", font_size)
         draw.multiline_text(position, text_, font=true_font)
 
         # Add a padding below the text
